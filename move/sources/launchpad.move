@@ -27,6 +27,9 @@ module launchpad_addr::launchpad {
     /// Mint limit reached
     const EMINT_LIMIT_REACHED: u64 = 7;
 
+    const EONLY_CREATOR_CAN_ADD_TO_ALLOWLIST: u64 = 8;
+    const ENOT_IN_ALLOWLIST: u64 = 9;
+
     /// Default to mint 0 amount to creator when creating FA
     const DEFAULT_PRE_MINT_AMOUNT: u64 = 0;
     /// Default mint fee per smallest unit of FA denominated in oapt (smallest unit of APT, i.e. 1e-8 APT)
@@ -85,6 +88,10 @@ module launchpad_addr::launchpad {
         fa_owner_obj: Object<FAOwnerObjConfig>,
     }
 
+    struct Allowlist has key, store {
+        addresses: vector<address>,
+    }
+
     /// Global per contract
     struct Registry has key {
         fa_objects: vector<Object<Metadata>>,
@@ -98,6 +105,7 @@ module launchpad_addr::launchpad {
         admin_addr: address,
         pending_admin_addr: Option<address>,
         mint_fee_collector_addr: address,
+        allowlist: Allowlist,
     }
 
     /// If you deploy the module under an object, sender is the object's signer
@@ -111,10 +119,18 @@ module launchpad_addr::launchpad {
             admin_addr: signer::address_of(sender),
             pending_admin_addr: option::none(),
             mint_fee_collector_addr: signer::address_of(sender),
+            allowlist: Allowlist { addresses: vector::empty() },
         });
     }
 
     // ================================= Entry Functions ================================= //
+
+    public entry fun add_allowlist(sender: &signer, address_to_add: address) acquires Config {
+        let sender_addr = signer::address_of(sender);
+        let config = borrow_global_mut<Config>(@launchpad_addr);
+        assert!(sender_addr == config.creator_addr, EONLY_CREATOR_CAN_ADD_TO_ALLOWLIST);
+        vector::push_back(&mut config.allowlist.addresses, address_to_add);
+    }
 
     /// Update creator address
     public entry fun update_creator(sender: &signer, new_creator: address) acquires Config {
@@ -245,6 +261,8 @@ module launchpad_addr::launchpad {
         amount: u64
     ) acquires FAController, FAConfig, Config {
         let sender_addr = signer::address_of(sender);
+        let config = borrow_global<Config>(@launchpad_addr);
+        assert!(vector::contains(&config.allowlist.addresses, &sender_addr), ENOT_IN_ALLOWLIST);
         check_mint_limit_and_update_mint_tracker(sender_addr, fa_obj, amount);
         let total_mint_fee = get_mint_fee(fa_obj, amount);
         pay_for_mint(sender, total_mint_fee);
@@ -252,6 +270,12 @@ module launchpad_addr::launchpad {
     }
 
     // ================================= View Functions ================================== //
+
+    #[view]
+    public fun get_allowlist(): vector<address> acquires Config {
+        let config = borrow_global<Config>(@launchpad_addr);
+        config.allowlist.addresses
+    }
 
     #[view]
     /// Get creator, creator is the address that is allowed to create FAs
@@ -428,6 +452,9 @@ module launchpad_addr::launchpad {
 
         init_module(sender);
 
+        // Can Mint
+        add_allowlist(sender, sender_addr);
+
         // create first FA
 
         create_fa(
@@ -475,6 +502,41 @@ module launchpad_addr::launchpad {
         mint_fa(sender, fa_2, 300);
         assert!(fungible_asset::supply(fa_2) == option::some(300), 5);
         assert!(primary_fungible_store::balance(sender_addr, fa_2) == 300, 6);
+
+        coin::destroy_burn_cap(burn_cap);
+        coin::destroy_mint_cap(mint_cap);
+    }
+
+    #[test(aptos_framework = @0x1, sender = @launchpad_addr, minter = @0x123)]
+    #[expected_failure(abort_code = 9, location = Self)]
+    fun test_not_allowlist(
+        aptos_framework: &signer,
+        sender: &signer,
+        minter: &signer
+    ) acquires Registry, FAController, Config, FAConfig {
+        let (burn_cap, mint_cap) = aptos_coin::initialize_for_test(aptos_framework);
+
+        init_module(sender);
+
+        // Create FA
+        create_fa(
+            sender,
+            option::some(1000),
+            string::utf8(b"FA1"),
+            string::utf8(b"FA1"),
+            2,
+            string::utf8(b"icon_url"),
+            string::utf8(b"project_url"),
+            option::none(),
+            option::none(),
+            option::some(500)
+        );
+
+        let registry = get_registry();
+        let fa_1 = *vector::borrow(&registry, vector::length(&registry) - 1);
+
+        // Try to mint as minter (should fail)
+        mint_fa(minter, fa_1, 20);
 
         coin::destroy_burn_cap(burn_cap);
         coin::destroy_mint_cap(mint_cap);
