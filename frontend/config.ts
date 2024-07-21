@@ -2,7 +2,7 @@ import Placeholder1 from "@/assets/placeholders/asset.png";
 
 export const config: Config = {
   // TODO: Fill in your asset id
-  asset_id: "0x844cc7461bc570b90b4b967f47b3d3fed239278d3bda5a17b75f3739f8657694",
+  asset_id: "0x5d9815377339318858b4d0133164186e9f1e9276ee8a69aea67768207d236bb3",
 
   // Removing one or all of these socials will remove them from the page
   socials: {

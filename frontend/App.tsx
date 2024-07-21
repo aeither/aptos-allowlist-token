@@ -3,6 +3,7 @@ import { RouterProvider, createBrowserRouter, Outlet } from "react-router-dom";
 import { Mint } from "@/pages/Mint";
 import { CreateFungibleAsset } from "@/pages/CreateFungibleAsset";
 import { MyFungibleAssets } from "@/pages/MyFungibleAssets";
+import { AllowlistPage } from "./pages/AllowlistPage";
 
 function Layout() {
   return (
@@ -27,6 +28,10 @@ const router = createBrowserRouter([
       {
         path: "my-assets",
         element: <MyFungibleAssets />,
+      },
+      {
+        path: "allowlist",
+        element: <AllowlistPage />,
       },
     ],
   },

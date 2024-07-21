@@ -33,6 +33,9 @@ export function Header() {
             <Link className={buttonVariants({ variant: "link" })} to={"/create-asset"}>
               Create Asset
             </Link>
+            <Link className={buttonVariants({ variant: "link" })} to={"/allowlist"}>
+              Allowlist
+            </Link>
           </>
         )}
 
