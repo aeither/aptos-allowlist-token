@@ -4,6 +4,7 @@ import { Mint } from "@/pages/Mint";
 import { CreateFungibleAsset } from "@/pages/CreateFungibleAsset";
 import { MyFungibleAssets } from "@/pages/MyFungibleAssets";
 import { AllowlistPage } from "./pages/AllowlistPage";
+import { TokenGatedPage } from "./pages/TokenGatedPage";
 
 function Layout() {
   return (
@@ -32,6 +33,10 @@ const router = createBrowserRouter([
       {
         path: "allowlist",
         element: <AllowlistPage />,
+      },
+      {
+        path: "token-gated",
+        element: <TokenGatedPage />,
       },
     ],
   },

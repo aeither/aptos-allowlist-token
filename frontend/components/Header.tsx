@@ -25,6 +25,12 @@ export function Header() {
       </h1>
 
       <div className="flex gap-2 items-center flex-wrap">
+        <Link
+          className={`${buttonVariants({ variant: "link" })} animate-pulse bg-gradient-to-r from-blue-500 to-green-500`}
+          to={"/token-gated"}
+        >
+          VIP
+        </Link>
         {IS_DEV && (
           <>
             <Link className={buttonVariants({ variant: "link" })} to={"/my-assets"}>
